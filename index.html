@@ -1271,7 +1271,8 @@ function vStartSimple(){const {y,m}=S.sel;const list=monthTx(y,m);const s=stats(
     else{const gs=Object.entries(s.grpL||{}).filter(([,v])=>v>=0.5).sort((x,z)=>z[1]-x[1]).slice(0,3);if(gs.length)why=`<section class="card"><div class="lbl">Woher das Minus kommt</div><div class="mini">${gs.map(([g,v])=>`<button type="button" class="mrow" data-act="showGrp" data-g="${esc(g)}" data-range="monat"><span><b>${esc(g)}</b></span><span class="amt">${eur(v)}</span></button>`).join('')}</div><div class="muted">Das sind die drei Bereiche, die diesen Monat am meisten gekostet haben.</div></section>`}}
   // one number to live by: with a budget what is left of it, without one what is left of the income after everything still due
   let free;
-  if(cur){const f=A?r2(A-s.hVar):r2(rest-due.all);const used=A?s.hVar:r2(aus+Math.max(0,sp)+due.all),of=A||inc;
+  if(cur&&none&&!due.all)free=`<section class="card"><div class="lbl">So fängst du an</div><div class="muted">Tippe auf <b>+ Eintragen</b>, wenn du etwas ausgibst oder Geld bekommst. Miete, Handy oder Abos legst du einmal unter <b>Fixe Zahlungen</b> an – dann bucht die App sie jeden Monat selbst.</div></section>`;
+  else if(cur){const f=A?r2(A-s.hVar):r2(rest-due.all);const used=A?s.hVar:r2(aus+Math.max(0,sp)+due.all),of=A||inc;
     free=`<section class="card"><div class="lbl">${A?'Frei für den Alltag':'Frei bis Monatsende'}</div><div class="sbig ${f<0?'neg':''}">${eur(f,0)}</div>
      <div class="track ${f<0?'over':''}"><i style="width:${of>0?Math.max(0,Math.min(100,used/of*100)).toFixed(1):0}%"></i></div>
      <div class="muted">${f>0?`Das sind <b>${eur(f/daysLeft,0)}</b> pro Tag für ${daysLeft===1?'heute':`die nächsten ${daysLeft} Tage`}.`:f<0?(A?`${eur(-f,0)} über dem Alltagsbudget.`:'Diesen Monat geht mehr hinaus, als hereinkam.'):'Genau aufgebraucht.'}${A?'':' Fixe Zahlungen, die noch kommen, sind schon abgezogen.'}</div></section>`}
@@ -2512,7 +2513,7 @@ async function backupWeb(){const name=`Kassabuch-Sicherung_${today()}.json`;cons
   if(ok){mut(()=>{D.meta=Object.assign({},D.meta,{lastBackup:today()})},'Sicherung gespeichert')}}
 function restoreWeb(){const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';
   inp.onchange=async()=>{const f=inp.files&&inp.files[0];if(!f)return;let nd;
-    try{nd=normalize(JSON.parse(await f.text()))}catch(e){toast('Diese Datei ist keine Kassabuch-Sicherung.');return}
+    try{const raw=JSON.parse(await f.text());if(!raw||!Array.isArray(raw.tx)||typeof raw.settings!=='object')throw new Error('fremd');nd=normalize(raw)}catch(e){toast('Diese Datei ist keine Kassabuch-Sicherung.');return}
     const n=(nd.tx||[]).length;if(!window.confirm(`Sicherung mit ${n} Buchungen laden?\n\nDas ersetzt alles, was gerade in der App ist.`))return;
     D=nd;derive();UNDO.length=0;S.session=[];ST.dirty=true;await saveNow(true);render();toast(`Sicherung geladen – ${n} Buchungen`)};
   inp.click()}
